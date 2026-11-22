@@ -1,0 +1,83 @@
+local _LP_CONFIG = {
+  HOST_URL = "https://exec.luaprotect.dev",
+  WS_URL = "wss://exec.luaprotect.dev/ws",
+  SCRIPT_ID = "_j_SnmDcLwH0Xgxp",
+  SCRIPT_NAME = "rat.hook2",
+  RUNNER_ID = "5567ad139cdf78880f6c6c102c5f1cea",
+  RUNNER_KEY = "5f1c536a82fa0272adf7d49bd8cd72142a8e64a0fa90e5e4aeff5e33317f140c",
+  NESTED_IMPORT = "0",
+  DISABLE_NOTIFICATIONS = 0,
+  THEME_BG = "",
+  THEME_ACCENT = "",
+  THEME_TEXT = "",
+  RUNNER_KEY_PROMPT = "0",
+  KEY_FLOW_URL = "",
+  DISCORD_INVITE = "",
+  CONTINUOUS_SESSION = "0",
+  CONTINUOUS_RECONNECT = "0",
+  HANDOFF_RUNNER_ID = "",
+  HANDOFF_KEY = "",
+  HANDOFF_RUN_ID = "",
+  HANDOFF_SESSION_ID = ""
+};
+_LP_CONFIG = _LP_CONFIG;
+_LP_RUNNER_CONFIG = _LP_CONFIG;
+if typeof(getgenv) == "function" then pcall(function() getgenv()._LP_RUNNER_CONFIG = _LP_CONFIG end) end
+if typeof(shared) == "table" then pcall(function() shared._LP_RUNNER_CONFIG = _LP_CONFIG end) end
+if typeof(_G) == "table" then pcall(function() _G._LP_RUNNER_CONFIG = _LP_CONFIG end) end
+if typeof(getrenv) == "function" then pcall(function() getrenv()._LP_RUNNER_CONFIG = _LP_CONFIG end) end
+local _lpT0 = os.clock()
+local function _lpM(l) pcall(function() if getgenv().LUAPROTECT_TIMING == true then local f = "luaprotect-timing.txt"; local line = string.format("[stub] %-18s %8.1f ms", l, (os.clock() - _lpT0) * 1000); print(line); if appendfile then if isfile and not isfile(f) and writefile then writefile(f, "") end appendfile(f, line .. "\n") end end end) end
+_lpM("stub start")
+local _h, _n = "9476baf1889edf59638a09ef", 754757
+local _H = "9476baf1889edf59638a09efd72211b99caf7b344a618c424050e67f2933d6a9"
+local function _cacheOk(s)
+    if type(s) ~= "string" or #s ~= _n then return false end
+    local ok, h = pcall(function() local c = (typeof(crypt) == "table" and crypt) or (syn and syn.crypt); if c and c.hash then return c.hash(s, "sha256") end end)
+    if ok and type(h) == "string" and #h == 64 and not h:find("[^%x]") then return h:lower() == _H end
+    return true
+end
+local _p = "luaprotect/runner_" .. _h .. ".lua"
+local _s
+pcall(function() if isfile and isfile(_p) then _s = readfile(_p) end end)
+if not _cacheOk(_s) then
+    for _i = 1, 3 do
+        local _ok, _r = pcall(game.HttpGet, game, "https://exec.luaprotect.dev/api/runner-body/" .. _h)
+        if _ok and type(_r) == "string" and #_r == _n then _s = _r break end
+        _s = nil
+        task.wait(0.4 * _i)
+    end
+    if not _s then error("[LuaProtect] could not download the loader (network error or the loader was just updated) - execute again", 0) end
+    if #_s == _n then
+        pcall(function()
+            if not isfolder("luaprotect") then makefolder("luaprotect") end
+            if listfiles then for _, f in ipairs(listfiles("luaprotect")) do
+                if tostring(f):find("runner_", 1, true) then pcall(delfile, f) end
+            end end
+            writefile(_p, _s)
+        end)
+    end
+end
+_lpM("runner text ready")
+local _f, _e = loadstring(_s)
+_lpM("runner compiled")
+_s = nil
+if not _f then error("[LuaProtect] runner failed to load: " .. tostring(_e), 0) end
+-- The executor's Lua heap is small (~128 MB): a small incremental step (never a full, stop-the-world collection) before this run starts.
+pcall(collectgarbage, "step", 64)
+_lpM("starting runner")
+local _res = table.pack(pcall(_f, ...))
+if _res[1] then return table.unpack(_res, 2, _res.n) end
+local _err = tostring(_res[2])
+if not _err:find("attempt to", 1, true) then error(_res[2], 0) end
+pcall(function()
+    local _rq = (syn and syn.request) or request or http_request or (http and http.request)
+    local _ex = "unknown"; pcall(function() _ex = tostring((identifyexecutor and identifyexecutor()) or "unknown") end)
+    local _hs = game:GetService("HttpService")
+    _rq({ Url = "https://exec.luaprotect.dev/api/runner-diag", Method = "POST", Headers = { ["Content-Type"] = "application/json" },
+        Body = _hs:JSONEncode({ events = { { kind = "script_error", message = "obfuscated runner failed: " .. _err:sub(1, 240), phase = "obf_runner", executor = _ex, scriptId = "_j_SnmDcLwH0Xgxp" } } }) })
+end)
+local _ok2, _pl = pcall(game.HttpGet, game, "https://exec.luaprotect.dev/api/run/_j_SnmDcLwH0Xgxp?plain=1")
+local _pf = _ok2 and type(_pl) == "string" and loadstring(_pl)
+if _pf then return _pf(...) end
+error(_res[2], 0)
