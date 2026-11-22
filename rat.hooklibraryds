@@ -1,0 +1,291 @@
+local Players = game:GetService("Players")
+local TweenService = game:GetService("TweenService")
+local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
+
+local LocalPlayer = Players.LocalPlayer
+local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
+
+local DISCORD_LINK = "https://discord.gg/KMVA9mWsN"
+local TOGGLE_KEY = Enum.KeyCode.RightShift
+
+if PlayerGui:FindFirstChild("RatHookWelcome") then
+    PlayerGui.RatHookWelcome:Destroy()
+end
+
+local UpperColor = Color3.fromRGB(135, 32, 36)
+local LowerColor = Color3.fromRGB(21, 9, 10)
+local Theme = {
+    Bg = LowerColor,
+    TopBar = Color3.fromRGB(28, 12, 13),
+    ElementBg = Color3.fromRGB(34, 14, 16),
+    BorderOuter = UpperColor,
+    BorderInner = Color3.fromRGB(95, 24, 27),
+    Accent = UpperColor,
+    TextMain = Color3.fromRGB(215, 165, 168),
+    TextMuted = Color3.fromRGB(130, 75, 78),
+}
+local MainFont = Enum.Font.Code
+
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "RatHookWelcome"
+ScreenGui.ResetOnSpawn = false
+ScreenGui.IgnoreGuiInset = true
+ScreenGui.DisplayOrder = 9999
+ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+ScreenGui.Parent = PlayerGui
+
+local ScreenDim = Instance.new("Frame", ScreenGui)
+ScreenDim.Size = UDim2.new(1, 0, 1, 0)
+ScreenDim.BackgroundColor3 = Color3.fromRGB(10, 4, 5)
+ScreenDim.BackgroundTransparency = 1
+ScreenDim.BorderSizePixel = 0
+ScreenDim.ZIndex = 1
+
+local SnowContainer = Instance.new("Frame", ScreenGui)
+SnowContainer.Size = UDim2.new(1, 0, 1, 0)
+SnowContainer.BackgroundTransparency = 1
+SnowContainer.ZIndex = 2
+
+local activeSnowflakes = {}
+local SnowConfig = {
+    Words = { "BeeBee", "Rat", "Wallyipe", "rat.hook" },
+    MaxWords = 50,
+    SpawnInterval = 0.25,
+    MinFallTime = 6,
+    MaxFallTime = 11,
+    MinTextSize = 10,
+    MaxTextSize = 14,
+}
+
+local function SpawnSnowWord()
+    if #activeSnowflakes >= SnowConfig.MaxWords then return end
+    local word = SnowConfig.Words[math.random(1, #SnowConfig.Words)]
+    local startX = math.random(5, 95) / 100
+    local direction = (math.random(0, 1) == 0) and -1 or 1
+    local drift = direction * (math.random(80, 240) / 1000)
+    local fallTime = math.random(SnowConfig.MinFallTime * 10, SnowConfig.MaxFallTime * 10) / 10
+
+    local lbl = Instance.new("TextLabel")
+    lbl.Size = UDim2.new(0, 100, 0, 18)
+    lbl.AnchorPoint = Vector2.new(0.5, 0.5)
+    lbl.Position = UDim2.new(startX, 0, -0.04, 0)
+    lbl.Rotation = direction * math.random(4, 14)
+    lbl.BackgroundTransparency = 1
+    lbl.Text = word
+    lbl.Font = MainFont
+    lbl.TextSize = math.random(SnowConfig.MinTextSize, SnowConfig.MaxTextSize)
+    lbl.TextColor3 = Theme.TextMain
+    lbl.TextTransparency = 0.7
+    lbl.ZIndex = 2
+    lbl.Parent = SnowContainer
+
+    table.insert(activeSnowflakes, lbl)
+
+    local endX = math.clamp(startX + drift, -0.05, 1.05)
+    local fallTween = TweenService:Create(lbl, TweenInfo.new(fallTime, Enum.EasingStyle.Linear), {
+        Position = UDim2.new(endX, 0, 1.05, 0)
+    })
+    fallTween:Play()
+
+    fallTween.Completed:Connect(function()
+        for i, v in ipairs(activeSnowflakes) do
+            if v == lbl then
+                table.remove(activeSnowflakes, i)
+                break
+            end
+        end
+        if lbl then lbl:Destroy() end
+    end)
+end
+
+task.spawn(function()
+    while ScreenGui and ScreenGui.Parent do
+        if SnowContainer.Visible then
+            SpawnSnowWord()
+        end
+        task.wait(SnowConfig.SpawnInterval)
+    end
+end)
+
+local MainFrame = Instance.new("Frame", ScreenGui)
+MainFrame.Size = UDim2.new(0, 400, 0, 240)
+MainFrame.Position = UDim2.new(0.5, -200, 0.5, -120)
+MainFrame.BackgroundColor3 = Theme.Bg
+MainFrame.BackgroundTransparency = 1
+MainFrame.BorderSizePixel = 0
+MainFrame.ZIndex = 5
+MainFrame.Parent = ScreenGui
+
+local corner = Instance.new("UICorner", MainFrame)
+corner.CornerRadius = UDim.new(0, 6)
+
+local stroke = Instance.new("UIStroke", MainFrame)
+stroke.Color = Theme.BorderOuter
+stroke.Thickness = 1.5
+
+local TitleBox = Instance.new("Frame", MainFrame)
+TitleBox.Size = UDim2.new(1, -20, 0, 30)
+TitleBox.Position = UDim2.new(0, 10, 0, 10)
+TitleBox.BackgroundColor3 = Theme.TopBar
+TitleBox.BorderSizePixel = 0
+TitleBox.ZIndex = 6
+TitleBox.Parent = MainFrame
+
+local corner2 = Instance.new("UICorner", TitleBox)
+corner2.CornerRadius = UDim.new(0, 4)
+local stroke2 = Instance.new("UIStroke", TitleBox)
+stroke2.Color = Theme.BorderOuter
+
+local TitleLabel = Instance.new("TextLabel", TitleBox)
+TitleLabel.Size = UDim2.new(1, 0, 1, 0)
+TitleLabel.BackgroundTransparency = 1
+TitleLabel.Text = "rat.hook"
+TitleLabel.Font = MainFont
+TitleLabel.TextSize = 16
+TitleLabel.TextColor3 = Theme.TextMain
+TitleLabel.ZIndex = 7
+TitleLabel.Parent = TitleBox
+
+local CloseBtn = Instance.new("TextButton", TitleBox)
+CloseBtn.Size = UDim2.new(0, 30, 1, 0)
+CloseBtn.Position = UDim2.new(1, -30, 0, 0)
+CloseBtn.BackgroundTransparency = 1
+CloseBtn.Text = "✕"
+CloseBtn.Font = MainFont
+CloseBtn.TextSize = 16
+CloseBtn.TextColor3 = Theme.TextMain
+CloseBtn.ZIndex = 8
+CloseBtn.Parent = TitleBox
+
+CloseBtn.MouseEnter:Connect(function()
+    CloseBtn.TextColor3 = Color3.fromRGB(255, 80, 80)
+end)
+CloseBtn.MouseLeave:Connect(function()
+    CloseBtn.TextColor3 = Theme.TextMain
+end)
+
+local MainText = Instance.new("TextLabel", MainFrame)
+MainText.Size = UDim2.new(1, -40, 0, 80)
+MainText.Position = UDim2.new(0, 20, 0, 55)
+MainText.BackgroundTransparency = 1
+MainText.Text = "Join our Discord\nto get the script"
+MainText.Font = MainFont
+MainText.TextSize = 16
+MainText.TextColor3 = Theme.TextMain
+MainText.TextYAlignment = Enum.TextYAlignment.Center
+MainText.TextWrapped = true
+MainText.ZIndex = 6
+MainText.Parent = MainFrame
+
+local CopyBtn = Instance.new("TextButton", MainFrame)
+CopyBtn.Size = UDim2.new(1, -40, 0, 40)
+CopyBtn.Position = UDim2.new(0, 20, 1, -60)
+CopyBtn.BackgroundColor3 = Theme.ElementBg
+CopyBtn.BorderSizePixel = 0
+CopyBtn.Text = "Our Discord"
+CopyBtn.Font = MainFont
+CopyBtn.TextSize = 14
+CopyBtn.TextColor3 = Theme.TextMain
+CopyBtn.AutoButtonColor = false
+CopyBtn.ZIndex = 6
+CopyBtn.Parent = MainFrame
+
+local corner3 = Instance.new("UICorner", CopyBtn)
+corner3.CornerRadius = UDim.new(0, 4)
+local stroke3 = Instance.new("UIStroke", CopyBtn)
+stroke3.Color = Theme.BorderOuter
+
+CopyBtn.MouseEnter:Connect(function()
+    TweenService:Create(CopyBtn, TweenInfo.new(0.2), { BackgroundColor3 = Theme.BorderOuter }):Play()
+end)
+CopyBtn.MouseLeave:Connect(function()
+    TweenService:Create(CopyBtn, TweenInfo.new(0.2), { BackgroundColor3 = Theme.ElementBg }):Play()
+end)
+
+local isOpen = false
+local isTweening = false
+
+local function SetMenuState(state)
+    if isTweening then return end
+    isTweening = true
+    isOpen = state
+
+    if state then
+        MainFrame.Visible = true
+        ScreenDim.Visible = true
+        SnowContainer.Visible = true
+        TweenService:Create(ScreenDim, TweenInfo.new(0.3), { BackgroundTransparency = 0.4 }):Play()
+        local t = TweenService:Create(MainFrame, TweenInfo.new(0.3), { BackgroundTransparency = 0 })
+        t:Play()
+        t.Completed:Connect(function() isTweening = false end)
+    else
+        TweenService:Create(ScreenDim, TweenInfo.new(0.3), { BackgroundTransparency = 1 }):Play()
+        local t = TweenService:Create(MainFrame, TweenInfo.new(0.3), { BackgroundTransparency = 1 })
+        t:Play()
+        t.Completed:Connect(function()
+            MainFrame.Visible = false
+            ScreenDim.Visible = false
+            SnowContainer.Visible = false
+            isTweening = false
+        end)
+    end
+end
+
+CopyBtn.MouseButton1Click:Connect(function()
+    if setclipboard then
+        pcall(setclipboard, DISCORD_LINK)
+        CopyBtn.Text = "Copied!"
+        task.delay(2, function() CopyBtn.Text = "Our Discord" end)
+    else
+        CopyBtn.Text = DISCORD_LINK
+    end
+end)
+
+CloseBtn.MouseButton1Click:Connect(function()
+    SetMenuState(false)
+end)
+
+RunService.RenderStepped:Connect(function()
+    if isOpen then
+        pcall(function()
+            UserInputService.MouseBehavior = Enum.MouseBehavior.Default
+            UserInputService.MouseIconEnabled = true
+        end)
+    end
+end)
+
+UserInputService.InputBegan:Connect(function(input, gp)
+    if gp then return end
+    if input.KeyCode == TOGGLE_KEY then
+        SetMenuState(not isOpen)
+    end
+end)
+
+task.spawn(function()
+    task.wait(0.5)
+    SetMenuState(true)
+end)
+
+task.spawn(function()
+    task.wait(1)
+    local opened = false
+    if type(openurl) == "function" then
+        opened = pcall(openurl, DISCORD_LINK)
+    elseif type(open_url) == "function" then
+        opened = pcall(open_url, DISCORD_LINK)
+    end
+
+    if not opened then
+        if setclipboard then
+            pcall(setclipboard, DISCORD_LINK)
+            pcall(function()
+                game:GetService("StarterGui"):SetCore("SendNotification", {
+                    Title = "rat.hook",
+                    Text = "Discord invite copied to clipboard!",
+                    Duration = 5
+                })
+            end)
+        end
+    end
+end)
